@@ -10,9 +10,16 @@ async function carregarMateriais() {
   const data = await res.json();
   lista.innerHTML = '';
   data.forEach(item => {
-    lista.innerHTML += `<tr><td>${item.nome}</td><td>${item.quantidade}</td></tr>`;
-  });
-}
+    lista.innerHTML += `<tr><td>${item.nome}</td><td>${item.quantidade}</td><td><button class="btn-excluir" data-id="${item.id}">Excluir</button></td></tr>`;
+  })
+    const botoes = document.querySelectorAll('.btn-excluir');
+    botoes.forEach(botao =>{
+      botao.addEventListener('click', () => {
+        const id = botao.getAttribute('data-id');
+        deletar(id);
+      })
+    })
+  };
 
 async function cadastrar() {
   const nome = inputNome.value;
@@ -25,6 +32,36 @@ async function cadastrar() {
   });
   inputNome.value = '';
   inputQtd.value = '';
+  carregarMateriais();
+}
+
+function validarRetirada(estoqueAtual, quantidadeRetirada) {
+  if (quantidadeRetirada > estoqueAtual){
+    alert('Quantidade de retirada excede o estoque atual!');
+     return false;
+  }else if (quantidadeRetirada <= 0){
+    alert('Quantidade de retirada deve ser maior que zero!');
+    return false;
+  }else{
+    return true;
+  }
+}
+
+async function deletar(id) {
+  await fetch(`${API}/${id}`, { method: 'DELETE' });
+  carregarMateriais();
+}
+
+async function baixarMaterial(id, quantidadeRetirada){
+  const res = await fetch(`${API}/${id}`);
+  const material = await res.json();
+  if (!validarRetirada(material.quantidade, quantidadeRetirada)) { 
+    alert('Estoque insuficiente ou quantidade inválida!'); return; }
+  await fetch(`${API}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ...material, quantidade: material.quantidade - quantidadeRetirada })
+  });
   carregarMateriais();
 }
 
